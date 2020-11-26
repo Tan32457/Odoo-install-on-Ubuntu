@@ -1,0 +1,72 @@
+1. To run Odoo properly, you need a PostgreSQL database server, which can be installed from the default repositories as shown.
+$ sudo apt update
+$ sudo apt install postgresql
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+2. Once the PostgresSQL installation is complete you need to check a few things. During the installation process, the installer is configured to start the postgresql service and enable it to automatically start when the server is rebooted. To check if the service is up and running, and is enabled, run the following systemctl commands.
+$ systemctl status postgresql
+$ systemctl is-enabled postgresql
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+3. Odoo 13 requires wkhtmltopdf v0.12.05 which is not provided in the Ubuntu repositories. So you need to install it manually by running the following commands.
+$ wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.5/wkhtmltox_0.12.5-1.bionic_amd64.deb
+$ sudo dpkg -i  wkhtmltox_0.12.5-1.bionic_amd64.deb
+$ sudo apt -f install 
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+4. Verify that Wkhtmltopdf is successfully installed on your machine.
+$ which wkhtmltopdf
+$ which wkhtmltoimage
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+5. We will be using official Odoo repository to install Odoo Community Edition by executing the following commands.
+$ sudo wget -O - https://nightly.odoo.com/odoo.key | sudo apt-key add -
+$ sudo echo "deb http://nightly.odoo.com/13.0/nightly/deb/ ./" | sudo tee -a /etc/apt/sources.list.d/odoo.list
+$ sudo apt-get update && apt-get install odoo
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+6. Once Odoo installed, you can verify the service is up and running and is enabled to automatically start at system boot.
+$ systemctl status odoo
+$ systemctl is-enabled odoo
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+7. By default, Odoo listens on port 8069 and you can verify it using the netstat or ss tools as follows. This is another way to confirm that Odoo is up and running.
+$ sudo netstat -tpln
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+8. To configure Nginx as a Reverse Proxy for Odoo, first, you need to install Nginx as shown.
+$ sudo apt install nginx
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+9. When the installation is complete, check if the Nginx service is up and running, is enabled as well.
+$ systemctl status nginx
+$ systemctl is-enabled nginx
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+10. Next, create an Nginx server block for Odoo in the file /etc/nginx/conf.d/odoo.conf as shown.
+$ sudo nano /etc/nginx/conf.d/odoo.conf
+
+Then copy and paste the following configuration in the file. 
+
+server {
+        listen      80;
+        server_name odoo.tecmint.lan; access_log /var/log/nginx/odoo_access.log; 
+        error_log /var/log/nginx/odoo_error.log; 
+        proxy_buffers 16 64k; proxy_buffer_size 128k; 
+        location / { proxy_pass http://127.0.0.1:8069; proxy_redirect off; 
+        proxy_set_header X-Real-IP $remote_addr; 
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; 
+        proxy_set_header Host $http_host; } 
+        location ~* /web/static/ { proxy_cache_valid 200 60m; 
+        proxy_buffering on; expires 864000; 
+        proxy_pass http://127.0.0.1:8069; 
+        } 
+        gzip on; gzip_min_length 1000; 
+}
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+11. After saving the changes in the file. Check the Nginx configuration structure for any syntax errors.
+$ sudo nginx -t
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+12. Now restart the Nginx service to effect the recent changes.
+$ sudo systemctl restart nginx
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+13. Importantly, if you have enabled the UFW firewall service enabled and running, you need to allow HTTP and HTTPS requests through the firewall to the Nginx server before starting to access the Odoo web interface.
+$ sudo ufw allow http
+$ sudo ufw allow https
+$ sudo ufw reload
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+14. Next, open a web browser and use the following address to access the Odoo web administration interface.
+IP Address : 32.xxx.xxx.xx:8069
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Cr.https://www.tecmint.com/install-odoo-in-ubuntu/?fbclid=IwAR1KP9mtuyCB77e7Lxo7iaUnq0tN5EtaernZzFN6M9eFVkLl37M2lrWzXnM
